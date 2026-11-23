@@ -199,8 +199,17 @@ const LEV={Invite:'#cfe0de',Onboard:'#cfe0de',Direct:'#D3FA50',Retention:'#68E1B
 const av=(n,s=56,lab,nc)=>IMG['av_'+n]?`<div class="av" ${nc?'':`data-p="${n}"`} style="width:${s}px;height:${s}px;background:${C[n]||'#888'} url(${IMG['av_'+n]}) center/cover"></div>`:`<div class="av" style="width:${s}px;height:${s}px;background:${C[n]||'#888'};font-size:${s*.42}px">${lab||(n==='you'?'YOU':n[0])}</div>`;
 const IC=(n,sz=28,col='currentColor')=>`<span style="display:inline-block;width:${sz}px;height:${sz}px;color:${col};vertical-align:middle">${ICON[n]}</span>`;
 const topB=(c='700',g='36')=>`<div class="topbar"><div class="cur">${c}<span class="coin"></span></div><div class="cur">${g}<span class="gem"></span></div></div>`;
-const PL={Arjun_K:[6,731,'Serve and volley','3-2 to you','Your rival today'],'Mila.T':[5,702,'Baseliner','1-0 to you','Plays you tomorrow'],Kenji77:[6,744,'Big server','0-1','Top of the circle'],'Sofia.R':[5,690,'Counter-puncher','1-0 to you','Beat her on Wednesday'],DexOnServe:[6,718,'All-rounder','Not played yet','Plays you Friday']};
-let SER={out:'win',m:1,res:[]};const SCR={win:[[6,3],[4,6],[6,4]],lose:[[6,4],[3,6],[5,7]]};
+const PL={Arjun_K:[6,731,'Serve and volley','3-2 to you','Your rival today'],'Mila.T':[5,702,'Baseliner','1-0 to you','Beat her on Monday'],Kenji77:[6,744,'Big server','0-1','Top of the circle'],'Sofia.R':[5,690,'Counter-puncher','1-0 to you','Beat her on Wednesday'],DexOnServe:[6,718,'All-rounder','Not played yet','Plays you Friday']};
+let SER={out:'win',m:1,res:[],counted:false};
+const CATCH='Catch-up day: play any series you missed this week.';
+function initST(){return {played:3,w:2,l:1,day:3,oi:0,lastOpp:null,lastWon:true,
+ dots:[['M','#5bd12a','Mon: beat Mila.T 2-1'],['T','#e2463a','Tue: lost 1-2 to Kenji77. The chest still filled.'],['W','#5bd12a','Wed: beat Sofia.R 2-0'],['T','','Thu: you vs Arjun_K'],['F','','Fri: you vs DexOnServe'],['S','c',CATCH],['S','c',CATCH]],
+ rec:{Kenji77:[3,0],Arjun_K:[2,1],'Mila.T':[1,2],'Sofia.R':[1,2],DexOnServe:[0,3]}};}
+let ST=initST();const OPPS=['Arjun_K','DexOnServe'];const DAYN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const opp=()=>OPPS[ST.oi]||null;const sn=n=>n.split(/[_.]/)[0];const pro=n=>n==='Arjun_K'?'him':'them';
+function commit(){if(SER.counted||ST.played>=5&&ST.lastOpp)return;SER.counted=true;const o=opp()||'Arjun_K',won=SER.out!=='lose';ST.lastOpp=o;ST.lastWon=won;
+ ST.played=Math.min(5,ST.played+1);if(won){ST.w++;ST.rec[o][1]++;}else{ST.l++;ST.rec[o][0]++;}
+ const d=ST.day;ST.dots[d]=[ST.dots[d][0],won?'#5bd12a':'#e2463a',`${DAYN[d]}: ${won?'beat '+o+' 2-1':'lost 1-2 to '+o+'. The chest still filled.'}`];ST.day=Math.min(6,d+1);ST.oi++;}const SCR={win:[[6,3],[4,6],[6,4]],lose:[[6,4],[3,6],[5,7]]};
 const B=(cls,txt,go,extra='')=>`<button class="btn ${cls} ${extra}" data-go="${go}">${txt}</button>`;
 
 const S={
@@ -223,8 +232,8 @@ A2:{f:'A',t:'Skill teaser on a loss',r:()=>`<img class="bg" src="${IMG.loss}">${
 A3:{f:'A',t:'Upgrade screen nudge',r:()=>`<img class="bg" src="${IMG.upgrade}">${topB()}
  <div class="toast fade" style="bottom:120px"><div class="pnl" style="padding:14px 14px 16px;border-color:#6f8f0a;background:linear-gradient(180deg,#245b5d,#173E3F)">
   <div class="gt" style="font-size:20px">Need 1,300 more coins</div>
-  <div class="row" style="justify-content:space-between;margin:10px 0 6px;font-size:13.5px;font-weight:600"><span>Circle chest 60%</span><span style="color:var(--lime)">+1,000 <span class="coin" style="width:13px;height:13px;vertical-align:-2px"></span> on Sunday</span></div>
-  <div class="bar2"><i class="fill" style="--from:0%;--to:60%;width:60%"></i></div>
+  <div class="row" style="justify-content:space-between;margin:10px 0 6px;font-size:13.5px;font-weight:600"><span>Circle chest ${ST.played*20}%</span><span style="color:var(--lime)">+1,000 <span class="coin" style="width:13px;height:13px;vertical-align:-2px"></span> on Sunday</span></div>
+  <div class="bar2"><i class="fill" style="--from:0%;--to:${ST.played*20}%;width:${ST.played*20}%"></i></div>
   <div style="margin-top:14px">${B('bg-lime w100','Play today\'s series','C10')}</div></div></div>`},
 A4:{f:'A',t:'Home screen entry',r:()=>`<img class="bg" src="${IMG.home}">${topB()}
  <div class="hot fade" data-go="C10" style="position:absolute;left:8px;top:452px;width:66px;text-align:center">
@@ -267,18 +276,23 @@ B9:{f:'B',t:'How it works',r:()=>`<img class="bg" src="${IMG.scene_blue}"><div c
  ${[['scale','Same stats for both','Only skill decides','Both players use the lower player\'s stats, the same engine friend matches already use.'],['calendar-event','One best-of-3 a day','About 10 minutes','One series a day plus 2 catch-up days. The cap keeps ranked as the main game.'],['shield-check','No trophy loss','A safe place to learn','Circle matches never cost trophies, so a loss here costs nothing.'],['gift','Weekly chest','Wins and losses count','Every match fills the chest: 1,000 coins plus cards, about 20% of a healthy week.']].map(t=>`<div class="pnl" data-tip="${t[3]}" style="padding:14px 12px;text-align:center;min-height:168px"><div style="width:58px;height:58px;margin:4px auto 10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#dbe8ff);box-shadow:0 4px 0 #0E2F86;display:flex;align-items:center;justify-content:center">${IC(t[0],30,'#1F56D6')}</div><div class="gt" style="font-size:19px;line-height:1.05">${t[1]}</div><div style="font-size:13px;margin-top:6px;color:#e6efff">${t[2]}</div></div>`).join('')}
  </div><div style="margin-top:22px">${B('bg-green w100 pulse','Got it','A4')}</div></div>`},
 /* ---------------- FLOW C ---------------- */
-C10:{f:'C',t:'Circle hub',r:()=>`<img class="bg" src="${IMG.scene_blue}"><div class="full" style="opacity:.78;background:linear-gradient(180deg,#2f74ee,#14348f)"></div>${topB()}
+C10:{f:'C',t:'Circle hub',r:()=>{const o=opp();
+ const rows=[['You',ST.w,ST.l,1],...Object.entries(ST.rec).map(([n,r])=>[n,r[0],r[1],0])].sort((a,b)=>b[1]-a[1]||a[2]-b[2]||b[3]-a[3]);
+ const done=ST.lastOpp?`<div class="row" style="gap:8px;margin:2px 0 8px;font:700 13px var(--b)"><span class="chip" style="background:${ST.lastWon?'var(--lime)':'#ffb4ad'};color:${ST.lastWon?'#183313':'#5a1610'}">${ST.lastWon?'Won':'Lost'}</span>${ST.lastWon?'2-1 vs ':'1-2 vs '}${ST.lastOpp}</div>`:'';
+ const today=ST.played>=5?`<div class="pnl" style="margin-top:10px;padding:14px;border-color:#8a5200;background:linear-gradient(180deg,#5a4a12,#2e2a10);text-align:center">${done}<div class="gt" style="font-size:22px">All 5 series played!</div><div style="font-size:13.5px;margin:4px 0 12px;opacity:.9">Your circle chest is ready to open.</div>${B('bg-orange w100 pulse','Open chest','D17')}</div>`
+ :`<div class="pnl hot" data-go="C12" style="margin-top:10px;padding:12px;border-color:#6f8f0a;background:linear-gradient(180deg,#245b5d,#173E3F)">${done}
+   <div class="lbl" style="color:var(--lime)">${ST.lastOpp?'Next · best of 3':'Today · best of 3'}</div>
+   <div class="row" style="gap:10px;margin:8px 0 10px">${av('you',44)}<div class="gt" style="font-size:22px">VS</div>${av(o,44)}<div style="flex:1"><div class="gtl" style="font-size:18px">${o}</div><div style="font-size:12px;opacity:.8">Head-to-head ${PL[o][3]}</div></div>${o==='Arjun_K'?'<button data-go="C11" style="font:700 12px var(--b);color:var(--lime)">Profile ›</button>':''}</div>
+   ${B('bg-lime w100 pulse',ST.lastOpp?'Play next series':'Play series','C12')}</div>`;
+ return `<img class="bg" src="${IMG.scene_blue}"><div class="full" style="opacity:.78;background:linear-gradient(180deg,#2f74ee,#14348f)"></div>${topB()}
  <div class="full fade" style="padding:86px 14px 0">
   <div class="row" style="justify-content:space-between"><div><div class="lbl">Rival circle</div><div class="gt" style="font-size:28px;line-height:1">Week 47</div></div><div class="chip" data-tip="A new circle forms every Monday with 6 players at your level." style="background:rgba(0,0,0,.25);color:#fff">Ends in 3d 14h</div></div>
-  <div class="pnl hot" data-go="C12" style="margin-top:10px;padding:12px;border-color:#6f8f0a;background:linear-gradient(180deg,#245b5d,#173E3F)">
-   <div class="lbl" style="color:var(--lime)">Today · best of 3</div>
-   <div class="row" style="gap:10px;margin:8px 0 10px">${av('you',44)}<div class="gt" style="font-size:22px">VS</div>${av('Arjun_K',44)}<div style="flex:1"><div class="gtl" style="font-size:18px">Arjun_K</div><div style="font-size:12px;opacity:.8">Head-to-head 3-2</div></div><button data-go="C11" style="font:700 12px var(--b);color:var(--lime)">Profile ›</button></div>
-   ${B('bg-lime w100 pulse','Play series','C12')}</div>
-  <div class="row" style="justify-content:space-between;margin:12px 2px 2px">${[['M','#5bd12a','Mon: beat Mila.T 2-1'],['T','#e2463a','Tue: lost 1-2 to Kenji77. The chest still filled.'],['W','#5bd12a','Wed: beat Sofia.R 2-0'],['T','today','Today: you vs Arjun_K'],['F','','Fri: you vs DexOnServe'],['S','c','Catch-up day: play any series you missed this week.'],['S','c','Catch-up day: play any series you missed this week.']].map(d=>`<div class="dot" data-tip="${d[2]}">${d[0]}<b style="${d[1]=='today'?'border-color:var(--lime);background:rgba(211,250,80,.35)':d[1]=='c'?'border-style:dashed':d[1]?'background:'+d[1]+';border-color:'+d[1]:''}"></b></div>`).join('')}</div>
+  ${today}
+  <div class="row" style="justify-content:space-between;margin:12px 2px 2px">${ST.dots.map((d,i)=>{const isT=i===ST.day&&ST.played<5&&d[1]!=='c';return `<div class="dot" data-tip="${isT&&o?'Today: you vs '+o:d[2]}">${d[0]}<b style="${isT?'border-color:var(--lime);background:rgba(211,250,80,.35)':d[1]=='c'?'border-style:dashed':d[1]?'background:'+d[1]+';border-color:'+d[1]:''}"></b></div>`}).join('')}</div>
   <div style="font-size:11px;text-align:right;opacity:.75;margin:2px 4px 6px">Dashed = catch-up days</div>
-  <table class="st">${[['1','Kenji77','3-0','3'],['2','You','2-1','2',1],['3','Arjun_K','2-1','2'],['4','Mila.T','1-2','1'],['5','Sofia.R','1-2','1'],['6','DexOnServe','0-3','0']].map(r=>`<tr class="${r[4]?'me':''}" ${r[4]?`data-tip="That's you: 2 series won, 1 lost so far."`:`data-p="${r[1]}"`}><td style="width:28px" class="gtl">${r[0]}</td><td><b>${r[1]}</b></td><td style="opacity:.85">${r[2]}</td><td class="gtl">${r[3]} pts</td></tr>`).join('')}</table>
-  <div class="pnl" data-tip="3 of 5 series played. The chest opens Sunday: 1,000 coins plus Backhand cards." style="margin-top:8px;padding:10px 12px"><div class="row" style="justify-content:space-between;font-size:13.5px;font-weight:700"><span>Circle chest · 3 of 5</span><span>1,000 <span class="coin" style="width:13px;height:13px;vertical-align:-2px"></span> + cards</span></div><div class="bar2" style="margin-top:6px"><i class="fill" style="--from:0%;--to:60%;width:60%"></i></div></div>
- </div>`},
+  <table class="st">${rows.map((r,i)=>`<tr class="${r[3]?'me':''}" ${r[3]?`data-tip="That's you: ${r[1]} series won, ${r[2]} lost so far."`:`data-p="${r[0]}"`}><td style="width:28px" class="gtl">${i+1}</td><td><b>${r[0]}</b></td><td style="opacity:.85">${r[1]}-${r[2]}</td><td class="gtl">${r[1]} pts</td></tr>`).join('')}</table>
+  <div class="pnl" data-tip="${ST.played} of 5 series played. The chest opens when all 5 are done: 1,000 coins plus Backhand cards." style="margin-top:8px;padding:10px 12px"><div class="row" style="justify-content:space-between;font-size:13.5px;font-weight:700"><span>Circle chest · ${ST.played} of 5</span><span>1,000 <span class="coin" style="width:13px;height:13px;vertical-align:-2px"></span> + cards</span></div><div class="bar2" style="margin-top:6px"><i class="fill" style="--from:${ST.lastOpp?(ST.played-1)*20:0}%;--to:${ST.played*20}%;width:${ST.played*20}%"></i></div></div>
+ </div>`}},
 C11:{f:'C',t:'Rival head-to-head',r:()=>`<img class="bg" src="${IMG.scene_blue}"><div class="full" style="opacity:.78;background:linear-gradient(180deg,#4a5cf6,#14348f)"></div>${topB()}
  <div class="full fade" style="padding:96px 18px 0;text-align:center">
   <div style="display:inline-block">${av('Arjun_K',110)}</div><div class="gt" style="font-size:32px;margin-top:8px">Arjun_K</div><div style="font-size:14px;opacity:.85">Tour 6 · 731 trophies · Serve and volley</div>
@@ -287,13 +301,13 @@ C11:{f:'C',t:'Rival head-to-head',r:()=>`<img class="bg" src="${IMG.scene_blue}"
    <div class="pnl" data-tip="Arjun won 7 of 9 net points in your last match." style="padding:12px"><div class="lbl">His edge</div><div class="gtl" style="font-size:19px;margin-top:4px">Wins 62% at the net</div></div>
    <div class="pnl" data-tip="You won 64% of baseline rallies longer than 5 shots." style="padding:12px"><div class="lbl">Your edge</div><div class="gtl" style="font-size:19px;margin-top:4px">You win from the baseline</div></div></div>
   <div style="margin-top:20px">${B('bg-green w100','Challenge','C12')}</div></div>`},
-C12:{f:'C',t:'Fair match lobby',r:()=>{const st=[['Agility',19,43],['Stamina',24,25],['Serve',19,28],['Volley',14,40],['Forehand',19,28],['Backhand',22,32]];
+C12:{f:'C',t:'Fair match lobby',r:()=>{const o=opp()||'Arjun_K';const st=[['Agility',19,43],['Stamina',24,25],['Serve',19,28],['Volley',14,40],['Forehand',19,28],['Backhand',22,32]];
  return `<img class="bg" src="${IMG.scene_court}"><div class="full" style="opacity:.78;background:linear-gradient(180deg,#e8806a,#c65a48 40%,#2f74ee 40%,#14348f)"></div>${topB()}
  <div class="full fade" style="padding:96px 16px 0">
-  <div class="row" style="justify-content:space-around;text-align:center"><div>${av('you',76)}<div class="gtl" style="font-size:17px;margin-top:4px">You</div></div><div class="gt" style="font-size:40px">VS</div><div>${av('Arjun_K',76)}<div class="gtl" style="font-size:17px;margin-top:4px">Arjun_K</div></div></div>
+  <div class="row" style="justify-content:space-around;text-align:center"><div>${av('you',76)}<div class="gtl" style="font-size:17px;margin-top:4px">You</div></div><div class="gt" style="font-size:40px">VS</div><div>${av(o,76)}<div class="gtl" style="font-size:17px;margin-top:4px">${o}</div></div></div>
   <div style="text-align:center;margin:14px 0 10px"><span class="chip" style="background:var(--lime);color:#183313;font-size:14px;padding:7px 14px;font-family:var(--d);font-style:italic;font-weight:900">FAIR MATCH: STATS EQUALISED</span></div>
   <div class="pnl" style="padding:10px 12px;background:linear-gradient(180deg,#b9473a,#8f2f26);border-color:#5c1a14">
-  ${st.map(s=>`<div class="row" data-tip="${s[0]}: Arjun's real ${s[2]} is set to ${s[1]} for this match." style="justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.12)"><span class="gtl" style="font-size:22px;width:60px">${s[1]}</span><span style="font:700 14px var(--b);opacity:.9">${s[0]}</span><span style="width:84px;text-align:right"><s style="opacity:.55;font:700 13px var(--b);margin-right:6px">${s[2]}</s><span class="gtl" style="font-size:22px">${s[1]}</span></span></div>`).join('')}
+  ${st.map(s=>`<div class="row" data-tip="${s[0]}: ${sn(o)}'s real ${s[2]} is set to ${s[1]} for this match." style="justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.12)"><span class="gtl" style="font-size:22px;width:60px">${s[1]}</span><span style="font:700 14px var(--b);opacity:.9">${s[0]}</span><span style="width:84px;text-align:right"><s style="opacity:.55;font:700 13px var(--b);margin-right:6px">${s[2]}</s><span class="gtl" style="font-size:22px">${s[1]}</span></span></div>`).join('')}
   </div>
   <div style="font-size:12.5px;text-align:center;margin-top:8px;opacity:.9">Both play at the lower player's stats</div>
   <div class="gt" style="text-align:center;font-size:22px;margin:10px 0 8px">Match 1 of 3</div>
@@ -302,26 +316,28 @@ C12:{f:'C',t:'Fair match lobby',r:()=>{const st=[['Agility',19,43],['Stamina',24
 C13:{f:'C',t:'Live match',r:()=>{const w=SER.res.filter(x=>x).length,l=SER.res.length-w;
  return `<img class="bg" src="${IMG.match}"><div class="ball" id="ball"></div>
  <div class="sb fade"><div class="row" style="justify-content:space-between"><span class="lbl" style="color:var(--lime)">Match ${SER.m} of 3 · series ${w}-${l}</span><span class="chip" style="background:rgba(255,255,255,.12);color:#fff">Fair match</span></div>
-  <div class="row" style="justify-content:space-between;margin-top:6px">${av('you',38)}<div class="gt" id="gs" style="font-size:40px;line-height:1">0 - 0</div>${av('Arjun_K',38)}</div>
+  <div class="row" style="justify-content:space-between;margin-top:6px">${av('you',38)}<div class="gt" id="gs" style="font-size:40px;line-height:1">0 - 0</div>${av(opp()||'Arjun_K',38)}</div>
   <div style="font:600 12.5px var(--b);text-align:center;opacity:.85;margin-top:4px" id="gst">Rally in progress</div></div>
  <div class="res" id="mres"></div>
  <div style="position:absolute;bottom:30px;left:16px;right:16px" id="mcta"></div>`}},
-C14:{f:'C',t:'Series result',r:()=>{const won=SER.out!=='lose';
+C14:{f:'C',t:'Series result',r:()=>{commit();const won=ST.lastWon,o=ST.lastOpp,p=ST.played,nx=opp();
  return `<img class="bg" src="${IMG.scene_court}"><div class="full" style="opacity:.78;background:radial-gradient(circle at 50% 30%,${won?'#4f9cff':'#7a6cf0'},#14348f 70%)"></div>${topB()}
  <div class="full fade" style="padding:100px 18px 0;text-align:center">
   <div class="lbl" style="color:${won?'var(--lime)':'#ffb4ad'}">${won?'Series won':'Series lost'}</div><div class="gt popin ${won?'':'shake'}" style="font-size:72px;line-height:1">${won?'2 - 1':'1 - 2'}</div>
-  <div class="row" style="justify-content:center;gap:14px;margin:14px 0">${av('you',70)}<div class="gt" style="font-size:22px">VS</div>${av('Arjun_K',70)}</div>
+  <div class="row" style="justify-content:center;gap:14px;margin:14px 0">${av('you',70)}<div class="gt" style="font-size:22px">VS</div>${av(o,70)}</div>
   <div class="row" style="justify-content:center;gap:8px;margin-bottom:14px">${won?'<span class="chip" style="background:var(--lime);color:#183313;font-size:14px">+1 circle point</span>':'<span class="chip" style="background:#ffb4ad;color:#5a1610;font-size:14px">0 points this time</span>'}<span class="chip" style="background:rgba(0,0,0,.25);color:#fff;font-size:14px">No trophies lost</span></div>
-  <div class="pnl" data-tip="Every series fills the chest, won or lost. It opens Sunday." style="padding:12px;text-align:left"><div class="row" style="justify-content:space-between;font-weight:700;font-size:14px"><span>Circle chest</span><span style="color:var(--lime)">3 → 4 of 5</span></div><div class="bar2" style="margin-top:8px"><i class="fill" style="--from:60%;--to:80%;width:80%"></i></div><div style="font-size:12.5px;margin-top:6px;opacity:.9">${won?'Wins and losses both count':'Lost the series, but your effort still counts'}</div></div>
-  <div class="gtl" style="font-size:18px;margin:14px 0">Next: Mila.T tomorrow</div>
-  <div class="row" style="gap:10px">${B('bg-orange pulse','See why','D15','" style="flex:1')}${B('bg-blue','Back to circle','C10','" style="flex:1')}</div></div>`}},
+  <div class="pnl" data-tip="Every series fills the chest, won or lost. It opens after 5 series." style="padding:12px;text-align:left"><div class="row" style="justify-content:space-between;font-weight:700;font-size:14px"><span>Circle chest</span><span style="color:var(--lime)">${p-1} → ${p} of 5</span></div><div class="bar2" style="margin-top:8px"><i class="fill" style="--from:${(p-1)*20}%;--to:${p*20}%;width:${p*20}%"></i></div><div style="font-size:12.5px;margin-top:6px;opacity:.9">${p>=5?'Chest full! Open it from your circle.':won?'Wins and losses both count':'Lost the series, but your effort still counts'}</div></div>
+  <div class="gtl" style="font-size:18px;margin:14px 0">${nx?'Next: '+nx+' tomorrow':'All 5 series done this week'}</div>
+  <div class="row" style="gap:10px">${B(won?'bg-green pulse':'bg-orange pulse',won?'Match recap':'See why','D15','" style="flex:1')}${B('bg-blue','Back to circle','C10','" style="flex:1')}</div></div>`}},
 /* ---------------- FLOW D ---------------- */
-D15:{f:'D',t:'Why you lost',r:()=>{const ins=[['Backhand errors','6','2',75,25,'4 of your 6 errors came on deep balls to your backhand corner.'],['First serve in','48%','71%',48,71,'You went for big first serves on break points and missed 5 of 7.'],['Net points won','2 of 9','7 of 9',22,78,'Arjun came to the net after short backhands. Keep them deep and cross-court.']];
- return `<img class="bg" src="${IMG.scene_blue}"><div class="full" style="opacity:.78;background:linear-gradient(180deg,#2f74ee,#14348f)"></div>${topB()}
- <div class="full fade" style="padding:92px 16px 0"><div class="lbl">Match 2 · lost ${SCR[SER.out][1][0]}-${SCR[SER.out][1][1]}</div><div class="gt" style="font-size:32px;line-height:1">Why you lost</div>
+D15:{f:'D',t:'Match feedback',r:()=>{const won=ST.lastOpp?ST.lastWon:SER.out!=='lose',o=ST.lastOpp||'Arjun_K',n=sn(o),sc=SCR[won?'win':'lose'][1];
+ const ins=won?[['Baseline rallies won','64%','36%',64,36,'You won most rallies longer than 5 shots.'],['Return points won','52%','41%',52,41,`Your returns kept ${n} on the back foot.`],['Backhand errors','6','2',75,25,'Your one leak: 4 of 6 errors came on deep balls to your backhand.']]
+ :[['Backhand errors','6','2',75,25,'4 of your 6 errors came on deep balls to your backhand corner.'],['First serve in','48%','71%',48,71,'You went for big first serves on break points and missed 5 of 7.'],['Net points won','2 of 9','7 of 9',22,78,`${n} came to the net after short backhands. Keep them deep and cross-court.`]];
+ return `<img class="bg" src="${IMG.scene_blue}"><div class="full" style="opacity:.78;background:linear-gradient(180deg,${won?'#2f9a6e':'#2f74ee'},#14348f)"></div>${topB()}
+ <div class="full fade" style="padding:92px 16px 0"><div class="lbl" style="color:${won?'var(--lime)':'#bcd6ff'}">${won?'Series won 2-1 vs '+o:'Series lost 1-2 · match 2 lost '+sc[0]+'-'+sc[1]}</div><div class="gt" style="font-size:32px;line-height:1">${won?'Why you won':'Why you lost'}</div>
   <div style="font-size:13px;opacity:.85;margin:4px 0 12px">Stats were equal, so this is all skill.</div>
-  ${ins.map(i=>`<div class="ins" data-tip="${i[5]}"><div class="row"><span class="gtl" style="font-size:18px">${i[0]}</span><span style="font-size:13px"><b>You ${i[1]}</b> · Arjun ${i[2]}</span></div><div class="cmp"><i style="width:${i[3]}%;background:#ffcd3c"></i><i style="width:${i[4]}%;background:#9fb1cc"></i></div></div>`).join('')}
-  <div class="pnl" style="margin-top:6px;padding:14px;border-color:#6f8f0a;background:linear-gradient(180deg,#245b5d,#173E3F)"><div class="lbl" style="color:var(--lime)">Tip</div><div style="font-size:16px;line-height:1.4;margin-top:4px">Go cross-court on the backhand to keep him off the net.</div></div>
+  ${ins.map(i=>`<div class="ins" data-tip="${i[5]}"><div class="row"><span class="gtl" style="font-size:18px">${i[0]}</span><span style="font-size:13px"><b>You ${i[1]}</b> · ${n} ${i[2]}</span></div><div class="cmp"><i style="width:${i[3]}%;background:#ffcd3c"></i><i style="width:${i[4]}%;background:#9fb1cc"></i></div></div>`).join('')}
+  <div class="pnl" style="margin-top:6px;padding:14px;border-color:#6f8f0a;background:linear-gradient(180deg,#245b5d,#173E3F)"><div class="lbl" style="color:var(--lime)">${won?'Keep improving':'Tip'}</div><div style="font-size:16px;line-height:1.4;margin-top:4px">${won?'Your baseline game won it. Tighten the backhand: it cost you match 2.':`Go cross-court on the backhand to keep ${pro(o)} off the net.`}</div></div>
   <div style="margin-top:16px">${B('bg-lime w100 pulse','60-second drill','D16')}</div></div>`}},
 D16:{f:'D',t:'60-second drill',r:()=>`<img class="bg" src="${IMG.court}">
  <div class="fade" style="position:absolute;top:96px;left:14px;right:14px;background:rgba(23,62,63,.92);border-radius:14px;padding:10px 14px;border:2px solid var(--lime)"><div class="lbl" style="color:var(--lime)">Drill</div><div class="gtl" style="font-size:19px">Backhand cross-court: land 10 in the target zone</div>
@@ -437,7 +453,7 @@ function act(k,el){const v=$('view');
  if(k==='friend'){closeSheet();toast('Friend request sent to '+el.dataset.n+'.');return;}
  if(k==='invite'){toast('Invite sent. Your friend joins the open slot when next week\'s circle forms.');return;}
  if(k==='out-win'||k==='out-lose'){SER.out=k.slice(4);render('C12',{push:false,anim:false});toast(SER.out==='win'?'Demo set to a winning series.':'Demo set to a losing series. Watch what still counts.');return;}
- if(k==='start'){SER.m=1;SER.res=[];navTo('C13');return;}
+ if(k==='start'){if(ST.played>=5){toast('All 5 series are done this week. Open your chest from the circle.');return;}SER.m=1;SER.res=[];SER.counted=false;navTo('C13');return;}
  if(k==='nextMatch'){SER.m++;render('C13',{push:false});return;}
  if(k==='toResult'){navTo('C14');return;}
  if(k==='hit'){const c=$('dcount');let n=parseInt(c.textContent);if(n>=10){toast('Drill complete! Backhand cross-court logged.');return;}n++;c.textContent=n+' / 10';$('dbar').style.width=n*10+'%';if(n>=10){confetti(100,340,28);toast('Drill complete! Tap Finish drill.');}return;}
@@ -464,12 +480,12 @@ function side(){const sIn=$('sideIn'),nav=$('nav'),mb=$('mobBar');
   mb.innerHTML=`<div class="t"><b>${si+1}/${STORY.length} · ${s[1]}</b></div><button class="prev" onclick="openSide()">Why</button><button class="prev" ${si==0?'disabled':''} onclick="go(si-1)">‹</button><button class="next" onclick="${inStory?'go(si+1)':'render(STORY[si][0],{dir:\'L\'})'}">${inStory?'›':'Rejoin'}</button>`;
  }else{
   sIn.innerHTML=`<div class="kicker">Explore · 23 screens</div><div class="stepB" style="margin-top:8px">Tap through freely in the phone, or jump to any screen.</div>`+
-   Object.keys(FLOWS).map(f=>`<div class="flow">${f}. ${FLOWS[f][0]}</div><div class="flowS">${FLOWS[f][1]}</div>`+Object.keys(S).filter(k=>S[k].f===f).map(k=>`<button class="sl ${k===cur?'on':''}" onclick="${k==='C13'?'SER.m=1;SER.res=[];':''}render('${k}');closeSide()"><span>${k.slice(1)}</span>${S[k].t}</button>`).join('')).join('');
+   Object.keys(FLOWS).map(f=>`<div class="flow">${f}. ${FLOWS[f][0]}</div><div class="flowS">${FLOWS[f][1]}</div>`+Object.keys(S).filter(k=>S[k].f===f).map(k=>`<button class="sl ${k===cur?'on':''}" onclick="${k==='C13'?'SER.m=1;SER.res=[];SER.counted=false;':''}render('${k}');closeSide()"><span>${k.slice(1)}</span>${S[k].t}</button>`).join('')).join('');
   nav.innerHTML=`<button class="next" onclick="setMode('story')">Start story mode</button>`;
   mb.innerHTML=`<div class="t"><b>${S[cur].t}</b>Explore mode</div><button class="next" onclick="openSide()">All screens</button>`;
  }}
 function go(i){if(i<0)return;const d=i<si?'L':'R';si=i;if(i>=STORY.length){side();return;}render(STORY[i][0],{dir:d});}
-function setMode(m){mode=m;$('mStory').classList.toggle('on',m==='story');$('mExplore').classList.toggle('on',m==='explore');if(m==='story'){si=0;SER={out:'win',m:1,res:[]};render('A1',{reset:true});}else side();}
+function setMode(m){mode=m;$('mStory').classList.toggle('on',m==='story');$('mExplore').classList.toggle('on',m==='explore');if(m==='story'){si=0;SER={out:'win',m:1,res:[],counted:false};ST=initST();render('A1',{reset:true});}else side();}
 function openSide(){$('side').classList.add('open');}
 function closeSide(){$('side').classList.remove('open');}
 $('mStory').onclick=()=>setMode('story');$('mExplore').onclick=()=>setMode('explore');
